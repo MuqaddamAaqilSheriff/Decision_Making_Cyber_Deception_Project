@@ -46,7 +46,7 @@ LIH_DEPLOY_COST = 0.25
 HIH_DEPLOY_COST = 0.75
 
 
-DEFAULT_MAX_GAME_STEPS = 20
+DEFAULT_MAX_GAME_STEPS = 5
 
 Location = tuple[int, int]
 FixedEnvironment = dict[str, Any]
