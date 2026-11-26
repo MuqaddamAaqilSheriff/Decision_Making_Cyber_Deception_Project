@@ -17,6 +17,7 @@ from cyber_deception_env import CyberDeceptionEnv
 BACKENDS = {
     "dqn": ("dqn", "DQNConfig", "DQNAgent"),
     "ddqn": ("doubledqn", "DDQNConfig", "DDQNAgent"),
+    "pdqn": ("pdqn", "PDQNConfig", "PDQNAgent"),
 }
 
 
@@ -91,7 +92,7 @@ def load_policy(
 
 def parse_policy_spec(spec: str, device: torch.device, index: int) -> DefenderPolicy:
     if "=" not in spec:
-        raise ValueError("Policy must be specified as dqn=path or ddqn=path")
+        raise ValueError("Policy must be specified as dqn=path, ddqn=path, or pdqn=path")
     algorithm, checkpoint = spec.split("=", 1)
     algorithm = algorithm.strip().lower()
     return load_policy(f"{algorithm}_imported_{index:02d}", algorithm, Path(checkpoint), device)
@@ -408,7 +409,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--mode", choices=("train", "evaluate"), default="train")
     parser.add_argument("--policies", nargs="*", default=[], metavar="ALGORITHM=CHECKPOINT")
-    parser.add_argument("--oracles", nargs="+", choices=tuple(BACKENDS), default=["dqn", "ddqn"])
+    parser.add_argument("--oracles", nargs="+", choices=tuple(BACKENDS), default=["dqn", "ddqn", "pdqn"])
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--episodes-per-oracle", type=int, default=6000)
     parser.add_argument("--attackers", nargs="+", choices=list(ATTACKER_VARIANTS), default=list(ATTACKER_VARIANTS))
@@ -463,7 +464,7 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.mode == "evaluate":
         if not policies:
-            raise ValueError("Evaluation requires --policies dqn=... ddqn=...")
+            raise ValueError("Evaluation requires --policies ALGORITHM=CHECKPOINT (e.g., pdqn=...)")
         evaluate_and_save(
             policies, args.attackers, args.output_dir, args.payoff_episodes,
             args.mixture_episodes, args.evaluation_seed, args.eval_random_network,
