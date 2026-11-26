@@ -210,13 +210,13 @@ class PDQNAgent:
         )
         predicted_q = self.policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         with torch.no_grad():
-            # Double DQN: online network selects, target network evaluates.
-            online_next_q = self.policy_net(next_states)
-            online_next_q = online_next_q.masked_fill(~next_masks, -torch.inf)
+            # Standard DQN target with Prioritized Experience Replay (PER):
+            # the target network both selects and evaluates the best legal next action.
             if ((~dones.bool()) & (~next_masks.any(dim=1))).any():
                 raise RuntimeError("Non-terminal transition has no legal next action")
-            next_actions = online_next_q.argmax(dim=1, keepdim=True)
-            next_q = self.target_net(next_states).gather(1, next_actions).squeeze(1)
+            target_next_q = self.target_net(next_states)
+            target_next_q = target_next_q.masked_fill(~next_masks, -torch.inf)
+            next_q = target_next_q.max(dim=1).values
             # Terminal states do not bootstrap, even if all actions are masked.
             next_q = torch.where(dones.bool(), torch.zeros_like(next_q), next_q)
             targets = rewards + self.config.gamma * (1.0 - dones) * next_q
